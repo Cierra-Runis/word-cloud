@@ -1,4 +1,3 @@
-from types import NoneType
 import webbrowser
 import cv2
 import json
@@ -527,6 +526,9 @@ class App(customtkinter.CTk):
             self.button_select_callback()
 
     def button_generate_callback(self):
+
+        if(self.dir == ''):
+            self.button_select_callback()
 
         target_width = int(self.entry_target_width.get())
         target_height = int(self.entry_target_height.get())
