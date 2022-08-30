@@ -1,16 +1,15 @@
+import webbrowser
+import cv2
 import json
 import logging
 import sys
-from turtle import bgcolor
 import jieba
 import os
 import customtkinter
-import cv2
 import tkinter
 import ctypes
 import numpy as np
-from tkinter import PhotoImage, font
-from tkinter import filedialog
+from tkinter import PhotoImage, font, filedialog
 from wordcloud import WordCloud, ImageColorGenerator
 from PIL import Image, ImageTk
 
@@ -21,9 +20,7 @@ def select_file_dir() -> str:
     '''
     root = tkinter.Tk()
     root.withdraw()
-    dir = filedialog.askopenfilename()
-    print('你选取了'+dir)
-    return dir
+    return filedialog.askopenfilename()
 
 
 def resize(img: cv2.Mat, target_width: int, target_height: int, background_color: str) -> cv2.Mat:
@@ -44,13 +41,13 @@ def resize(img: cv2.Mat, target_width: int, target_height: int, background_color
     shrink = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
 
     # 获取边框颜色
-    BGR = Hex_to_BGR(background_color)
+    RGB = Hex_to_RGB(background_color)
     # 定位
     a = (target_width - int(original_width / ratio)) / 2
     b = (target_height - int(original_height / ratio)) / 2
     # 创建边框以达到目标图片大小
     constant = cv2.copyMakeBorder(
-        shrink, int(b), int(b), int(a), int(a), cv2.BORDER_CONSTANT, value=BGR
+        shrink, int(b), int(b), int(a), int(a), cv2.BORDER_CONSTANT, value=RGB
     )
     constant = cv2.resize(
         constant, (target_width, target_height), interpolation=cv2.INTER_AREA
@@ -60,7 +57,7 @@ def resize(img: cv2.Mat, target_width: int, target_height: int, background_color
     return constant
 
 
-def Hex_to_BGR(hex: str) -> list[int]:
+def Hex_to_RGB(hex: str) -> list[int]:
     '''
     将 16 进制颜色代码 如 #ff8800 转为 BGR
     '''
@@ -68,22 +65,20 @@ def Hex_to_BGR(hex: str) -> list[int]:
     r = int(hex[0:2], 16)
     g = int(hex[2:4], 16)
     b = int(hex[4:6], 16)
-    bgr = [r, g, b]
 
-    return bgr
+    return [r, g, b]
 
 
-def get_image(select_file_dir: str, target_width: int, target_height: int, background_color: str) -> Image.Image:
+def get_image(select_file_dir: str, target_width: int, target_height: int, background_color: str, output_filename: str):
     '''
-    得到目标图片
+    将所选的图片拓展后保存至根目录
     '''
     # 读取传入图片
-    cv_img = cv2.imdecode(np.fromfile(select_file_dir, dtype=np.uint8), -1)
-    img = cv2.cvtColor(cv_img, cv2.IMREAD_COLOR)
-    # img = cv2.imread(select_file_dir, cv2.IMREAD_UNCHANGED)
+    img = cv2.imread(select_file_dir, cv2.IMREAD_UNCHANGED)
 
     # 若是透明图像 RGBA ，则需要转为 RGB ，并将不透明部分改为背景色
     if img.shape[2] == 4:
+        img = cv2.imread(select_file_dir, cv2.IMREAD_UNCHANGED)
         # 获取传入图片宽度、高度
         width = img.shape[0]
         height = img.shape[1]
@@ -94,17 +89,15 @@ def get_image(select_file_dir: str, target_width: int, target_height: int, backg
                 # 最后一个通道为透明度，如果其值为 0 ，即图像是透明的话
                 if (color_d[3] == 0):
                     # 则将当前点的颜色设置为背景色，且图像设置为不透明
-                    BGR = Hex_to_BGR(background_color)
-                    BGRA = [BGR[0], BGR[1], BGR[2], 255]
-                    img[xw, yh] = BGRA
+                    RGB = Hex_to_RGB(background_color)
+                    img[xw, yh] = [RGB[0], RGB[1], RGB[2], 255]
 
     # 将部分透明度不为 0 ~ 255 的图像保险转为 RGB 通道
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
     # 将已无透明部分传入的图片居中并不变形缩放至需要的大小，并用边框拓展
     img = resize(img, target_width, target_height, background_color)
 
-    # 最后返回目标图片
-    return Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    cv2.imwrite(DIR+output_filename, img)
 
 
 def pop_deleted_and_all_to_str(diary_json: list[dict]) -> str:
@@ -121,7 +114,7 @@ def pop_deleted_and_all_to_str(diary_json: list[dict]) -> str:
 
 def jieba_processing_txt(text):
     '''
-    抄自 
+    抄自
     '''
     my_word_list = []
     seg_list = jieba.cut(text, cut_all=False)
@@ -151,11 +144,10 @@ class App(customtkinter.CTk):
         self.title('WordCloud')
         window_width = 1200
         window_height = 675
-        self.minsize(window_width, window_height)
-        self.maxsize(window_width, window_height)
+        self.resizable(height=False, width=False)
         self.fg_color = "#282C34"
         self.configure(bg='#282C34')
-        self.iconbitmap(DIR+'/icon.ico')
+        self.iconbitmap(DIR+'/icon/icon.ico')
         self.attributes('-alpha', 1)
         self.geometry(
             "%dx%d+%d+%d" % (
@@ -165,7 +157,6 @@ class App(customtkinter.CTk):
                 int((self.winfo_screenheight()-window_height)/2)
             )
         )
-        self.attributes("-topmost", 1)
 
         # 名称
         self.app_name = customtkinter.CTkLabel(
@@ -194,10 +185,11 @@ class App(customtkinter.CTk):
             text='',
             width=90,
             height=100,
-            image=PhotoImage(file=DIR+'/icon.png').subsample(3, 3),
+            image=PhotoImage(file=DIR+'/icon/icon.png').subsample(3, 3),
             corner_radius=0,
             fg_color="#37373F",
-            hover_color="#37373F"
+            hover_color="#37373F",
+            command=self.button_icon_callback
         )
         self.icon.place(
             anchor='nw',
@@ -267,7 +259,7 @@ class App(customtkinter.CTk):
             text='',
             width=36,
             height=36,
-            image=PhotoImage(file=DIR+'/width.png'),
+            image=PhotoImage(file=DIR+'/icon/width.png'),
             corner_radius=0,
             fg_color="#1F1F1F",
             hover_color="#1F1F1F"
@@ -335,7 +327,7 @@ class App(customtkinter.CTk):
             text='',
             width=36,
             height=36,
-            image=PhotoImage(file=DIR+'/height.png'),
+            image=PhotoImage(file=DIR+'/icon/height.png'),
             corner_radius=0,
             fg_color="#1F1F1F",
             hover_color="#1F1F1F"
@@ -403,7 +395,7 @@ class App(customtkinter.CTk):
             text='',
             width=36,
             height=36,
-            image=PhotoImage(file=DIR+'/color.png'),
+            image=PhotoImage(file=DIR+'/icon/color.png'),
             corner_radius=0,
             fg_color="#1F1F1F",
             hover_color="#1F1F1F"
@@ -452,13 +444,11 @@ class App(customtkinter.CTk):
             x=360,
             y=30
         )
-
         self.preview_image = customtkinter.CTkButton(
             text='',
             width=755,
             height=490,
             corner_radius=30,
-
             fg_color='#1F1F1F',
             hover_color="#1F1F1F",
             bg_color='#21252B',
@@ -469,50 +459,62 @@ class App(customtkinter.CTk):
             y=130
         )
 
-        # 选取图片按钮
-        self.button_select_pic = customtkinter.CTkButton(
+        # 选取按钮
+        self.button_select = customtkinter.CTkButton(
             master=self,
-            text='选取',
-            width=46,
-            height=24,
-            command=self.button_select_pic_callback,
-            text_font=('宋体', 10)
+            text='',
+            width=50,
+            height=50,
+            corner_radius=25,
+            bg_color='#1F1F1F',
+            fg_color='#DCDCDC',
+            hover_color='#A5A5A5',
+            command=self.button_select_callback,
+            image=PhotoImage(file=DIR+'/icon/select.png'),
         )
-        self.button_select_pic.place(
+        self.button_select.place(
             anchor='nw',
             x=1000,
-            y=600
+            y=555
         )
 
-        # 确认按钮
+        # 生成按钮
         self.button_generate = customtkinter.CTkButton(
             master=self,
-            text='生成',
-            width=46,
-            height=24,
+            text='',
+            width=50,
+            height=50,
+            corner_radius=25,
+            bg_color='#1F1F1F',
+            fg_color='#DCDCDC',
+            hover_color='#A5A5A5',
             command=self.button_generate_callback,
-            text_font=('宋体', 10)
+            image=PhotoImage(file=DIR+'/icon/generate.png'),
         )
         self.button_generate.place(
             anchor='nw',
             x=1080,
-            y=600,
+            y=555,
         )
 
-    def button_select_pic_callback(self):
+    def button_icon_callback(self):
+        webbrowser.open_new_tab('https://github.com/Cierra-Runis/word-cloud')
+
+    def button_select_callback(self):
         # 防止为空
         while True:
             self.dir = select_file_dir()
             if(self.dir != ''):
-                print(self.dir+'是非空文件！')
-                print('\n\n\n\n\n')
                 break
+
         # 将选取文件放至预览框
-        try:
-            self.preview_image.configure(image=None)
-            self.preview_image.configure(image=PhotoImage(file=self.dir))
-        except:
-            self.button_select_pic_callback()
+        self.preview_image.configure(image=None)
+        get_image(self.dir, 430, 430, '#1F1F1F', '/temp.png')
+        self.preview_image.configure(
+            image=ImageTk.PhotoImage(file=DIR+'/temp.png'),
+            fg_color='#1F1F1F',
+            hover_color='#1F1F1F'
+        )
 
     def button_generate_callback(self):
 
@@ -528,37 +530,58 @@ class App(customtkinter.CTk):
             pop_deleted_and_all_to_str(diary_json)
         )
 
-        mask = np.array(
-            get_image(
-                self.dir,
-                target_width,
-                target_height,
-                background_color[0]+background_color[5:7] +
-                background_color[3:5]+background_color[1:3]
-            )
+        get_image(
+            self.dir,
+            target_width,
+            target_height,
+            background_color,
+            '/temp.png'
         )
+
+        get_image(
+            DIR+'/temp.png',
+            target_width,
+            target_height,
+            background_color,
+            '/temp.png'
+        )
+
+        mask = np.array(Image.open(DIR+'/temp.png'))
         wc = WordCloud(
             font_path=font_path,
             background_color=background_color,
             max_words=2000,
             mask=mask,
             max_font_size=100,
-            random_state=40,
+            random_state=20,
             width=target_width,
             height=target_height,
             color_func=ImageColorGenerator(mask),
             margin=2,
+            collocations=False
         )
 
         wc.generate(text)
         wc.to_file(DIR+'/generated.png')
+        wordcloud_svg = wc.to_svg(embed_font=True)
+        with open(DIR+'/generated.svg', "w", encoding="utf-8") as svg:
+            svg.write(wordcloud_svg)
+
         self.preview_image.configure(image=None)
+        get_image(DIR+'/generated.png', 430, 430,
+                  background_color, '/temp.png')
         self.preview_image.configure(
-            image=ImageTk.PhotoImage(
-                get_image(DIR+'/generated.png', 512, 512, background_color)),
+            image=ImageTk.PhotoImage(file=DIR+'/temp.png'),
             fg_color=background_color,
             hover_color=background_color,
         )
+        self.button_generate.configure(
+            bg_color=background_color,
+        )
+        self.button_select.configure(
+            bg_color=background_color,
+        )
+        os.remove(DIR+'/temp.png')
 
 
 if __name__ == '__main__':
@@ -566,7 +589,7 @@ if __name__ == '__main__':
     # 所在地址
     DIR = os.path.dirname(sys.argv[0])
 
-    # 加载讯飞输入法导出的用户词典，并删去其中的单字与部分短句
+    # 加载讯飞输入法导出的用户词典，并删去其中的单字、部分短句、形容词
     jieba.setLogLevel(logging.INFO)
     jieba.load_userdict(DIR + '/user_dict.txt')
 
