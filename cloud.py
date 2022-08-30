@@ -1,3 +1,4 @@
+from types import NoneType
 import webbrowser
 import cv2
 import json
@@ -41,7 +42,7 @@ def resize(img: cv2.Mat, target_width: int, target_height: int, background_color
     shrink = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
 
     # 获取边框颜色
-    RGB = Hex_to_RGB(background_color)
+    RGB = Hex_to_BGR(background_color)
     # 定位
     a = (target_width - int(original_width / ratio)) / 2
     b = (target_height - int(original_height / ratio)) / 2
@@ -57,7 +58,7 @@ def resize(img: cv2.Mat, target_width: int, target_height: int, background_color
     return constant
 
 
-def Hex_to_RGB(hex: str) -> list[int]:
+def Hex_to_BGR(hex: str) -> list[int]:
     '''
     将 16 进制颜色代码 如 #ff8800 转为 BGR
     '''
@@ -66,7 +67,7 @@ def Hex_to_RGB(hex: str) -> list[int]:
     g = int(hex[2:4], 16)
     b = int(hex[4:6], 16)
 
-    return [r, g, b]
+    return [b, g, r]
 
 
 def get_image(select_file_dir: str, target_width: int, target_height: int, background_color: str, output_filename: str):
@@ -89,8 +90,8 @@ def get_image(select_file_dir: str, target_width: int, target_height: int, backg
                 # 最后一个通道为透明度，如果其值为 0 ，即图像是透明的话
                 if (color_d[3] == 0):
                     # 则将当前点的颜色设置为背景色，且图像设置为不透明
-                    RGB = Hex_to_RGB(background_color)
-                    img[xw, yh] = [RGB[0], RGB[1], RGB[2], 255]
+                    GBR = Hex_to_BGR(background_color)
+                    img[xw, yh] = [GBR[0], GBR[1], GBR[2], 255]
 
     # 将部分透明度不为 0 ~ 255 的图像保险转为 RGB 通道
     img = cv2.cvtColor(img, cv2.COLOR_RGBA2RGB)
@@ -507,14 +508,23 @@ class App(customtkinter.CTk):
             if(self.dir != ''):
                 break
 
-        # 将选取文件放至预览框
-        self.preview_image.configure(image=None)
-        get_image(self.dir, 430, 430, '#1F1F1F', '/temp.png')
-        self.preview_image.configure(
-            image=ImageTk.PhotoImage(file=DIR+'/temp.png'),
-            fg_color='#1F1F1F',
-            hover_color='#1F1F1F'
-        )
+        try:
+            # 将选取文件放至预览框
+            self.preview_image.configure(image=None)
+            get_image(self.dir, 430, 430, '#1F1F1F', '/temp.png')
+            self.preview_image.configure(
+                image=ImageTk.PhotoImage(file=DIR+'/temp.png'),
+                fg_color='#1F1F1F',
+                hover_color='#1F1F1F'
+            )
+            self.button_generate.configure(
+                bg_color='#1F1F1F',
+            )
+            self.button_select.configure(
+                bg_color='#1F1F1F',
+            )
+        except AttributeError:
+            self.button_select_callback()
 
     def button_generate_callback(self):
 
