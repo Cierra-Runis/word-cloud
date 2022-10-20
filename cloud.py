@@ -116,7 +116,7 @@ def analyze_json_to_str(diary_json: list[dict], analyze_item: str, exclusion_wor
     return str
 
 
-def jieba_processing_txt(text):
+def jieba_processing_text(text: str):
     # 抄自 https://github.com/amueller/word_cloud/blob/master/examples/wordcloud_cn.py
     '''
     使用结巴分词进行分词
@@ -135,6 +135,14 @@ def jieba_processing_txt(text):
             my_word_list.append(my_word)
 
     return ' '.join(my_word_list)
+
+
+def txt_to_list(selected_file_dir: str) -> list[dict]:
+    list = []
+    with open(selected_file_dir, 'r', encoding='utf-8-sig') as f:
+        for line in f.readlines():
+            list.append({'content': line})
+    return list
 
 
 class App(customtkinter.CTk):
@@ -489,7 +497,7 @@ class App(customtkinter.CTk):
             x=15,
             y=5
         )
-
+        # txt 模式按钮
         self.button_txt_mode = customtkinter.CTkRadioButton(
             master=self.target_mode_frame,
             text='txt',
@@ -502,6 +510,7 @@ class App(customtkinter.CTk):
             x=75,
             y=15
         )
+        # json 模式按钮
         self.button_json_mode = customtkinter.CTkRadioButton(
             master=self.target_mode_frame,
             text='json',
@@ -514,6 +523,7 @@ class App(customtkinter.CTk):
             x=135,
             y=15
         )
+        # 解析项输入框
         self.entry_json_keyword = customtkinter.CTkEntry(
             master=self.target_mode_frame,
             width=80,
@@ -665,15 +675,23 @@ class App(customtkinter.CTk):
             selected_json = json.loads(
                 open(self.selected_file_dir, 'r', encoding='utf-8-sig').read()
             )
-            text = jieba_processing_txt(
+            text = jieba_processing_text(
                 analyze_json_to_str(
                     selected_json, self.entry_json_keyword.get(), 'deleted')
             )
         else:
             # 当是 txt 解析模式时
-            text = jieba_processing_txt(
-                open(self.selected_file_dir, 'r', encoding='utf-8-sig').read()
+            with open('temp.json', 'w', encoding='utf-8-sig') as f:
+                f.write(json.dumps(txt_to_list(
+                    self.selected_file_dir), ensure_ascii=False))
+            selected_json = json.loads(
+                open('temp.json', 'r', encoding='utf-8-sig').read()
             )
+            text = jieba_processing_text(
+                analyze_json_to_str(
+                    selected_json, 'content', 'deleted')
+            )
+            os.remove(DIR+'/temp.json')
 
         get_image(
             self.selected_img_dir,
@@ -695,10 +713,10 @@ class App(customtkinter.CTk):
         wc = WordCloud(
             font_path=font_path,
             background_color=background_color,
-            max_words=3000,
+            max_words=2000,
             mask=mask,
             max_font_size=100,
-            min_font_size=16,
+            min_font_size=12,
             random_state=20,
             width=target_width,
             height=target_height,
