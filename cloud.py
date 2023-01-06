@@ -1,33 +1,43 @@
+'''
+WordCloud 生成你的云图
+'''
+
 from typing import Iterable
 import webbrowser
-import cv2
 import json
 import logging
 import sys
-import jieba
-import os
-import customtkinter
 import tkinter
 import ctypes
-import numpy as np
 from tkinter import PhotoImage, font, filedialog
+import os
+import cv2
 from wordcloud import WordCloud, ImageColorGenerator
 from PIL import Image, ImageTk
+import numpy as np
+import jieba
+import customtkinter
 
 
-def select_file_dir(title: str, filetype: Iterable[tuple[str, str | list[str] | tuple[str, ...]]] | None = ...) -> str:
+def select_file_dir(
+    title: str,
+    filetype: Iterable[tuple[str, str | list[str] | tuple[str, ...]]]
+    | None = ...
+) -> str:
     '''
     选择文件并返回文件地址
     '''
     root = tkinter.Tk()
     root.withdraw()
-    return filedialog.askopenfilename(
-        title=title,
-        filetypes=filetype
-    )
+    return filedialog.askopenfilename(title=title, filetypes=filetype)
 
 
-def resize(img: cv2.Mat, target_width: int, target_height: int, background_color: str) -> cv2.Mat:
+def resize(
+    img: cv2.Mat,
+    target_width: int,
+    target_height: int,
+    background_color: str,
+) -> cv2.Mat:
     '''
     将已无透明部分传入的图片居中并不变形缩放至需要的大小，并用边框拓展
     '''
@@ -51,10 +61,18 @@ def resize(img: cv2.Mat, target_width: int, target_height: int, background_color
     b = (target_height - int(original_height / ratio)) / 2
     # 创建边框以达到目标图片大小
     constant = cv2.copyMakeBorder(
-        shrink, int(b), int(b), int(a), int(a), cv2.BORDER_CONSTANT, value=RGB
+        shrink,
+        int(b),
+        int(b),
+        int(a),
+        int(a),
+        cv2.BORDER_CONSTANT,
+        value=RGB,
     )
     constant = cv2.resize(
-        constant, (target_width, target_height), interpolation=cv2.INTER_AREA
+        constant,
+        (target_width, target_height),
+        interpolation=cv2.INTER_AREA,
     )
 
     # 返回
@@ -73,7 +91,8 @@ def Hex_to_BGR(hex: str) -> list[int]:
     return [b, g, r]
 
 
-def get_image(select_file_dir: str, target_width: int, target_height: int, background_color: str, output_filename: str):
+def get_image(select_file_dir: str, target_width: int, target_height: int,
+              background_color: str, output_filename: str):
     '''
     将所选的图片拓展后保存至根目录
     '''
@@ -101,16 +120,17 @@ def get_image(select_file_dir: str, target_width: int, target_height: int, backg
     # 将已无透明部分传入的图片居中并不变形缩放至需要的大小，并用边框拓展
     img = resize(img, target_width, target_height, background_color)
 
-    cv2.imwrite(DIR+output_filename, img)
+    cv2.imwrite(DIR + output_filename, img)
 
 
-def analyze_json_to_str(diary_json: list[dict], analyze_item: str, exclusion_word: str) -> str:
+def analyze_json_to_str(diary_json: list[dict], analyze_item: str,
+                        exclusion_word: str) -> str:
     '''
     将所有不为 exclusion_word 的 analyze 项的内容并为长字符串
     '''
     str = ''
     for i_diary_json in diary_json:
-        if(i_diary_json[analyze_item] != exclusion_word):
+        if (i_diary_json[analyze_item] != exclusion_word):
             str = str + i_diary_json[analyze_item] + '\n'
 
     return str
@@ -131,7 +151,8 @@ def jieba_processing_text(text: str):
         f_stop_seg_list = f_stop_text.splitlines()
 
     for my_word in list_str.split('/'):
-        if not (my_word.strip() in f_stop_seg_list) and len(my_word.strip()) > 1:
+        if not (my_word.strip()
+                in f_stop_seg_list) and len(my_word.strip()) > 1:
             my_word_list.append(my_word)
 
     return ' '.join(my_word_list)
@@ -164,37 +185,29 @@ class App(customtkinter.CTk):
         self.resizable(height=False, width=False)
         self.fg_color = BG_COLOR
         self.configure(bg=BG_COLOR)
-        self.iconbitmap(DIR+'/icon/icon.ico')
+        self.iconbitmap(DIR + '/icon/icon.ico')
         self.attributes('-alpha', 1)
-        self.geometry(
-            "%dx%d+%d+%d" % (
-                window_width,
-                window_height,
-                int((self.winfo_screenwidth()-window_width)/2),
-                int((self.winfo_screenheight()-window_height)/2)
-            )
-        )
+        self.geometry("%dx%d+%d+%d" % (
+            window_width,
+            window_height,
+            int((self.winfo_screenwidth() - window_width) / 2),
+            int((self.winfo_screenheight() - window_height) / 2),
+        ))
 
         # 名称
         self.app_name = customtkinter.CTkLabel(
             master=self,
-            text='　　　　'+APP_NAME,
+            text='　　　　' + APP_NAME,
             width=300,
             height=100,
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=18,
-                weight=font.BOLD
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=18,
+                                weight=font.BOLD),
             fg_color=BLOCK_COLOR,
             text_color=LIGHT_GRAY_COLOR,
-            corner_radius=30
+            corner_radius=30,
         )
-        self.app_name.place(
-            anchor='nw',
-            x=30,
-            y=30
-        )
+        self.app_name.place(anchor='nw', x=30, y=30)
 
         # 图标
         self.icon = customtkinter.CTkButton(
@@ -202,17 +215,12 @@ class App(customtkinter.CTk):
             text='',
             width=90,
             height=100,
-            image=PhotoImage(file=DIR+'/icon/icon.png').subsample(3, 3),
+            image=PhotoImage(file=DIR + '/icon/icon.png').subsample(3, 3),
             corner_radius=0,
             fg_color=BLOCK_COLOR,
             hover_color=BLOCK_COLOR,
-            command=self.button_icon_callback
-        )
-        self.icon.place(
-            anchor='nw',
-            x=60,
-            y=30
-        )
+            command=self.button_icon_callback)
+        self.icon.place(anchor='nw', x=60, y=30)
 
         # 设置框 #################################################################################################################################################
         self.setting_frame = customtkinter.CTkLabel(
@@ -225,16 +233,11 @@ class App(customtkinter.CTk):
             text_font=font.Font(
                 family='Microsoft YaHei UI',
                 size=20,
-                weight=font.BOLD
+                weight=font.BOLD,
             ),
             text_color=LIGHT_GRAY_COLOR,
-            pady=20
-        )
-        self.setting_frame.place(
-            anchor='nw',
-            x=30,
-            y=155
-        )
+            pady=20)
+        self.setting_frame.place(anchor='nw', x=30, y=155)
 
         # 输入目标宽度框 ###########################################################
         self.target_width_frame = customtkinter.CTkFrame(
@@ -242,60 +245,44 @@ class App(customtkinter.CTk):
             width=274,
             height=52,
             fg_color=DARK_BLACK_COLOR,
-            corner_radius=15
+            corner_radius=15,
         )
-        self.target_width_frame.place(
-            x=13,
-            y=75,
-            anchor='nw'
-        )
+        self.target_width_frame.place(x=13, y=75, anchor='nw')
         # 输入部分
         self.entry_target_width = customtkinter.CTkEntry(
             master=self.target_width_frame,
             width=154,
             height=36,
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=10,
-                weight=font.NORMAL
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=10,
+                                weight=font.NORMAL),
             fg_color=DARK_BLACK_COLOR,
             border_color=DARK_BLACK_COLOR,
             corner_radius=0,
             placeholder_text='目标宽度',
             justify='center',
         )
-        self.entry_target_width.place(
-            x=60,
-            y=8,
-            anchor='nw'
-        )
+        self.entry_target_width.place(x=60, y=8, anchor='nw')
         # 图标部分
         self.icon_target_width = customtkinter.CTkButton(
             master=self.target_width_frame,
             text='',
             width=36,
             height=36,
-            image=PhotoImage(file=DIR+'/icon/width.png'),
+            image=PhotoImage(file=DIR + '/icon/width.png'),
             corner_radius=0,
             fg_color=DARK_BLACK_COLOR,
-            hover_color=DARK_BLACK_COLOR
+            hover_color=DARK_BLACK_COLOR,
         )
-        self.icon_target_width.place(
-            anchor='nw',
-            x=15,
-            y=5
-        )
+        self.icon_target_width.place(anchor='nw', x=15, y=5)
         # 单位
         self.text_target_width = customtkinter.CTkLabel(
             master=self.target_width_frame,
             text='px',
             width=18,
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=10,
-                weight=font.NORMAL
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=10,
+                                weight=font.NORMAL),
             text_color=LIGHT_GRAY_COLOR,
         )
         self.text_target_width.place(
@@ -310,60 +297,41 @@ class App(customtkinter.CTk):
             width=274,
             height=52,
             fg_color=DARK_BLACK_COLOR,
-            corner_radius=15
-        )
-        self.target_height_frame.place(
-            x=13,
-            y=75+75,
-            anchor='nw'
-        )
+            corner_radius=15)
+        self.target_height_frame.place(x=13, y=75 + 75, anchor='nw')
         # 输入部分
         self.entry_target_height = customtkinter.CTkEntry(
             master=self.target_height_frame,
             width=154,
             height=36,
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=10,
-                weight=font.NORMAL
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=10,
+                                weight=font.NORMAL),
             fg_color=DARK_BLACK_COLOR,
             border_color=DARK_BLACK_COLOR,
             corner_radius=0,
             placeholder_text='目标高度',
-            justify='center'
-        )
-        self.entry_target_height.place(
-            x=60,
-            y=8,
-            anchor='nw'
-        )
+            justify='center')
+        self.entry_target_height.place(x=60, y=8, anchor='nw')
         # 图标部分
         self.icon_target_height = customtkinter.CTkButton(
             master=self.target_height_frame,
             text='',
             width=36,
             height=36,
-            image=PhotoImage(file=DIR+'/icon/height.png'),
+            image=PhotoImage(file=DIR + '/icon/height.png'),
             corner_radius=0,
             fg_color=DARK_BLACK_COLOR,
-            hover_color=DARK_BLACK_COLOR
-        )
-        self.icon_target_height.place(
-            anchor='nw',
-            x=15,
-            y=5
-        )
+            hover_color=DARK_BLACK_COLOR)
+        self.icon_target_height.place(anchor='nw', x=15, y=5)
         # 单位
         self.text_target_height = customtkinter.CTkLabel(
             master=self.target_height_frame,
             text='px',
             width=18,
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=10,
-                weight=font.NORMAL
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=10,
+                                weight=font.NORMAL),
             text_color=LIGHT_GRAY_COLOR,
         )
         self.text_target_height.place(
@@ -378,60 +346,42 @@ class App(customtkinter.CTk):
             width=274,
             height=52,
             fg_color=DARK_BLACK_COLOR,
-            corner_radius=15
-        )
-        self.target_color_frame.place(
-            x=13,
-            y=75+75+75,
-            anchor='nw'
-        )
+            corner_radius=15)
+        self.target_color_frame.place(x=13, y=75 + 75 + 75, anchor='nw')
         # 输入部分
         self.entry_target_color = customtkinter.CTkEntry(
             master=self.target_color_frame,
             width=154,
             height=36,
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=10,
-                weight=font.NORMAL
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=10,
+                                weight=font.NORMAL),
             fg_color=DARK_BLACK_COLOR,
             border_color=DARK_BLACK_COLOR,
             corner_radius=0,
             placeholder_text='背景颜色',
             justify='center',
         )
-        self.entry_target_color.place(
-            x=60,
-            y=8,
-            anchor='nw'
-        )
+        self.entry_target_color.place(x=60, y=8, anchor='nw')
         # 图标部分
         self.icon_target_color = customtkinter.CTkButton(
             master=self.target_color_frame,
             text='',
             width=36,
             height=36,
-            image=PhotoImage(file=DIR+'/icon/color.png'),
+            image=PhotoImage(file=DIR + '/icon/color.png'),
             corner_radius=0,
             fg_color=DARK_BLACK_COLOR,
-            hover_color=DARK_BLACK_COLOR
-        )
-        self.icon_target_color.place(
-            anchor='nw',
-            x=15,
-            y=5
-        )
+            hover_color=DARK_BLACK_COLOR)
+        self.icon_target_color.place(anchor='nw', x=15, y=5)
         # 单位
         self.text_target_color = customtkinter.CTkLabel(
             master=self.target_color_frame,
             text='px',
             width=18,
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=10,
-                weight=font.NORMAL
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=10,
+                                weight=font.NORMAL),
             text_color=LIGHT_GRAY_COLOR,
         )
         self.text_target_color.place(
@@ -446,26 +396,19 @@ class App(customtkinter.CTk):
         def radiobutton_event():
             self.entry_json_keyword.entry_focus_out()
             self.entry_json_keyword.configure(
-                state=((radio_var.get() == 2)
-                       and 'normal'
-                       or 'disabled'
-                       )
-            )
+                state=((radio_var.get() == 2) and 'normal' or 'disabled'))
             while True:
                 self.selected_file_dir = ''
                 self.selected_file_dir = select_file_dir(
-                    title=((radio_var.get() == 2)
-                           and '请选取 json 文件'
-                           or '请选取 txt 文件'
-                           ),
-                    filetype=((radio_var.get() == 2)
-                              and (('json files', '*.json'),)
-                              or (('txt files', '*.txt'),)
-                              )
-                )
-                if(self.selected_file_dir != ''):
+                    title=((radio_var.get() == 2) and '请选取 json 文件'
+                           or '请选取 txt 文件'),
+                    filetype=((radio_var.get() == 2) and
+                              (('json files', '*.json'), )
+                              or (('txt files', '*.txt'), )))
+                if (self.selected_file_dir != ''):
                     break
-            if((radio_var.get() == 2) and (self.entry_json_keyword.get() == '解析项')):
+            if ((radio_var.get() == 2)
+                    and (self.entry_json_keyword.get() == '解析项')):
                 self.entry_json_keyword.delete(0, 3)
                 self.entry_json_keyword.insert(0, '')
 
@@ -474,79 +417,50 @@ class App(customtkinter.CTk):
             width=274,
             height=52,
             fg_color=DARK_BLACK_COLOR,
-            corner_radius=15
-        )
-        self.target_mode_frame.place(
-            x=13,
-            y=75+75+75+75,
-            anchor='nw'
-        )
+            corner_radius=15)
+        self.target_mode_frame.place(x=13, y=75 + 75 + 75 + 75, anchor='nw')
         # 图标部分
         self.icon_target_mode = customtkinter.CTkButton(
             master=self.target_mode_frame,
             text='',
             width=36,
             height=36,
-            image=PhotoImage(file=DIR+'/icon/mode.png'),
+            image=PhotoImage(file=DIR + '/icon/mode.png'),
             corner_radius=0,
             fg_color=DARK_BLACK_COLOR,
-            hover_color=DARK_BLACK_COLOR
-        )
-        self.icon_target_mode.place(
-            anchor='nw',
-            x=15,
-            y=5
-        )
+            hover_color=DARK_BLACK_COLOR)
+        self.icon_target_mode.place(anchor='nw', x=15, y=5)
         # txt 模式按钮
         self.button_txt_mode = customtkinter.CTkRadioButton(
             master=self.target_mode_frame,
             text='txt',
             command=radiobutton_event,
             variable=radio_var,
-            value=1
-        )
-        self.button_txt_mode.place(
-            anchor='nw',
-            x=75,
-            y=15
-        )
+            value=1)
+        self.button_txt_mode.place(anchor='nw', x=75, y=15)
         # json 模式按钮
         self.button_json_mode = customtkinter.CTkRadioButton(
             master=self.target_mode_frame,
             text='json',
             command=radiobutton_event,
             variable=radio_var,
-            value=2
-        )
-        self.button_json_mode.place(
-            anchor='nw',
-            x=135,
-            y=15
-        )
+            value=2)
+        self.button_json_mode.place(anchor='nw', x=135, y=15)
         # 解析项输入框
         self.entry_json_keyword = customtkinter.CTkEntry(
             master=self.target_mode_frame,
             width=80,
             height=36,
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=10,
-                weight=font.NORMAL
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=10,
+                                weight=font.NORMAL),
             fg_color=DARK_BLACK_COLOR,
             border_color=DARK_BLACK_COLOR,
             corner_radius=0,
             placeholder_text='解析项',
-            justify='center'
-        )
-        self.entry_json_keyword.configure(
-            state='disabled'
-        )
-        self.entry_json_keyword.place(
-            x=190,
-            y=8,
-            anchor='nw'
-        )
+            justify='center')
+        self.entry_json_keyword.configure(state='disabled')
+        self.entry_json_keyword.place(x=190, y=8, anchor='nw')
 
         # 预览框 #################################################################################################################################################
         self.preview_frame = customtkinter.CTkLabel(
@@ -556,19 +470,12 @@ class App(customtkinter.CTk):
             width=815,
             height=620,
             anchor='n',
-            text_font=font.Font(
-                family='Microsoft YaHei UI',
-                size=20,
-                weight=font.BOLD
-            ),
+            text_font=font.Font(family='Microsoft YaHei UI',
+                                size=20,
+                                weight=font.BOLD),
             text_color=LIGHT_GRAY_COLOR,
-            pady=30
-        )
-        self.preview_frame.place(
-            anchor='nw',
-            x=360,
-            y=30
-        )
+            pady=30)
+        self.preview_frame.place(anchor='nw', x=360, y=30)
         self.preview_image = customtkinter.CTkButton(
             text='',
             width=755,
@@ -578,11 +485,7 @@ class App(customtkinter.CTk):
             hover_color=DARK_BLACK_COLOR,
             bg_color=BLOCK_COLOR,
         )
-        self.preview_image.place(
-            anchor='nw',
-            x=390,
-            y=130
-        )
+        self.preview_image.place(anchor='nw', x=390, y=130)
 
         # 选取按钮
         self.button_select = customtkinter.CTkButton(
@@ -595,13 +498,9 @@ class App(customtkinter.CTk):
             fg_color=LIGHT_GRAY_COLOR,
             hover_color=DARK_GRAY_COLOR,
             command=self.button_select_callback,
-            image=PhotoImage(file=DIR+'/icon/select.png'),
+            image=PhotoImage(file=DIR + '/icon/select.png'),
         )
-        self.button_select.place(
-            anchor='nw',
-            x=1000,
-            y=555
-        )
+        self.button_select.place(anchor='nw', x=1000, y=555)
 
         # 生成按钮
         self.button_generate = customtkinter.CTkButton(
@@ -614,7 +513,7 @@ class App(customtkinter.CTk):
             fg_color=LIGHT_GRAY_COLOR,
             hover_color=DARK_GRAY_COLOR,
             command=self.button_generate_callback,
-            image=PhotoImage(file=DIR+'/icon/generate.png'),
+            image=PhotoImage(file=DIR + '/icon/generate.png'),
         )
         self.button_generate.place(
             anchor='nw',
@@ -630,38 +529,33 @@ class App(customtkinter.CTk):
         while True:
             self.selected_img_dir = select_file_dir(
                 title='请选取图片',
-                filetype=(('jpg files', '*.jpg'), ('png files', '*.png'))
+                filetype=(('jpg files', '*.jpg'), ('png files', '*.png')),
             )
-            if(self.selected_img_dir != ''):
+            if (self.selected_img_dir != ''):
                 break
 
         try:
             # 将选取文件放至预览框
             self.preview_image.configure(image=None)
-            get_image(self.selected_img_dir, 430, 430,
-                      DARK_BLACK_COLOR, '/temp.png')
-            self.preview_image.configure(
-                image=ImageTk.PhotoImage(file=DIR+'/temp.png'),
-                fg_color=DARK_BLACK_COLOR,
-                hover_color=DARK_BLACK_COLOR
-            )
-            self.button_generate.configure(
-                bg_color=DARK_BLACK_COLOR,
-            )
-            self.button_select.configure(
-                bg_color=DARK_BLACK_COLOR,
-            )
+            get_image(self.selected_img_dir, 430, 430, DARK_BLACK_COLOR,
+                      '/temp.png')
+            self.preview_image.configure(image=ImageTk.PhotoImage(file=DIR +
+                                                                  '/temp.png'),
+                                         fg_color=DARK_BLACK_COLOR,
+                                         hover_color=DARK_BLACK_COLOR)
+            self.button_generate.configure(bg_color=DARK_BLACK_COLOR, )
+            self.button_select.configure(bg_color=DARK_BLACK_COLOR, )
         except AttributeError:
             self.button_select_callback()
 
     def button_generate_callback(self):
 
         # 防止未选择图片
-        if(self.selected_img_dir == ''):
+        if (self.selected_img_dir == ''):
             self.button_select_callback()
 
         # 防止未选择解析文件
-        if(self.selected_file_dir == ''):
+        if (self.selected_file_dir == ''):
             self.button_txt_mode.invoke()
 
         # 获取目标宽度、高度、背景颜色
@@ -670,82 +564,62 @@ class App(customtkinter.CTk):
         background_color = self.entry_target_color.get()
 
         # 读取所有文本
-        if(self.button_json_mode.check_state):
+        if (self.button_json_mode.check_state):
             # 当是 json 解析模式时
             selected_json = json.loads(
-                open(self.selected_file_dir, 'r', encoding='utf-8-sig').read()
-            )
+                open(self.selected_file_dir, 'r', encoding='utf-8-sig').read())
             text = jieba_processing_text(
-                analyze_json_to_str(
-                    selected_json, self.entry_json_keyword.get(), 'deleted')
-            )
+                analyze_json_to_str(selected_json,
+                                    self.entry_json_keyword.get(), 'deleted'))
         else:
             # 当是 txt 解析模式时
             with open('temp.json', 'w', encoding='utf-8-sig') as f:
-                f.write(json.dumps(txt_to_list(
-                    self.selected_file_dir), ensure_ascii=False))
+                f.write(
+                    json.dumps(txt_to_list(self.selected_file_dir),
+                               ensure_ascii=False))
             selected_json = json.loads(
-                open('temp.json', 'r', encoding='utf-8-sig').read()
-            )
+                open('temp.json', 'r', encoding='utf-8-sig').read())
             text = jieba_processing_text(
-                analyze_json_to_str(
-                    selected_json, 'content', 'deleted')
-            )
-            os.remove(DIR+'/temp.json')
+                analyze_json_to_str(selected_json, 'content', 'deleted'))
+            os.remove(DIR + '/temp.json')
 
-        get_image(
-            self.selected_img_dir,
-            target_width,
-            target_height,
-            background_color,
-            '/temp.png'
-        )
+        get_image(self.selected_img_dir, target_width, target_height,
+                  background_color, '/temp.png')
 
-        get_image(
-            DIR+'/temp.png',
-            target_width,
-            target_height,
-            background_color,
-            '/temp.png'
-        )
+        get_image(DIR + '/temp.png', target_width, target_height,
+                  background_color, '/temp.png')
 
-        mask = np.array(Image.open(DIR+'/temp.png'))
-        wc = WordCloud(
-            font_path=font_path,
-            background_color=background_color,
-            max_words=2000,
-            mask=mask,
-            max_font_size=100,
-            min_font_size=12,
-            random_state=20,
-            width=target_width,
-            height=target_height,
-            color_func=ImageColorGenerator(mask),
-            margin=2,
-            collocations=False
-        )
+        mask = np.array(Image.open(DIR + '/temp.png'))
+        wc = WordCloud(font_path=font_path,
+                       background_color=background_color,
+                       max_words=2000,
+                       mask=mask,
+                       max_font_size=100,
+                       min_font_size=12,
+                       random_state=20,
+                       width=target_width,
+                       height=target_height,
+                       color_func=ImageColorGenerator(mask),
+                       margin=2,
+                       collocations=False)
 
         wc.generate(text)
-        wc.to_file(DIR+'/generated.png')
+        wc.to_file(DIR + '/generated.png')
         wordcloud_svg = wc.to_svg(embed_font=True)
-        with open(DIR+'/generated.svg', "w", encoding="utf-8") as svg:
+        with open(DIR + '/generated.svg', "w", encoding="utf-8") as svg:
             svg.write(wordcloud_svg)
 
         self.preview_image.configure(image=None)
-        get_image(DIR+'/generated.png', 430, 430,
-                  background_color, '/temp.png')
+        get_image(DIR + '/generated.png', 430, 430, background_color,
+                  '/temp.png')
         self.preview_image.configure(
-            image=ImageTk.PhotoImage(file=DIR+'/temp.png'),
+            image=ImageTk.PhotoImage(file=DIR + '/temp.png'),
             fg_color=background_color,
             hover_color=background_color,
         )
-        self.button_generate.configure(
-            bg_color=background_color,
-        )
-        self.button_select.configure(
-            bg_color=background_color,
-        )
-        os.remove(DIR+'/temp.png')
+        self.button_generate.configure(bg_color=background_color, )
+        self.button_select.configure(bg_color=background_color, )
+        os.remove(DIR + '/temp.png')
 
 
 if __name__ == '__main__':
